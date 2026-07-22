@@ -180,6 +180,7 @@ def main() -> None:
                     help="drop reasoning_content on replay (A/B the reasoning-replay factor)")
     ap.add_argument("--world", choices=("consistent", "inconsistent"), default="consistent",
                     help="tool-result synthesis: stateful mini-FS vs deliberately contradictory")
+    ap.add_argument("-o", "--out", help="append one JSONL row per run (renderable by `report`)")
     args = ap.parse_args()
 
     catalog = Catalog.load(args.config)
@@ -187,6 +188,9 @@ def main() -> None:
     with open(args.context, encoding="utf-8") as fh:
         blob = json.load(fh)
 
+    import os
+    ctx_name = os.path.basename(args.context)
+    out_fh = open(args.out, "a", encoding="utf-8") if args.out else None
     summary: list[tuple[str, list[str]]] = []
     for spec in specs:
         try:
@@ -198,14 +202,24 @@ def main() -> None:
         outcomes = []
         for run in range(args.runs):
             print(f"\n########## RUN {run} — {spec.name} (start len={len(blob['messages'])}) ##########")
-            outcomes.append(drive(spec, key, blob, max_steps=args.max_steps,
-                                  max_tokens=args.max_tokens, timeout=args.timeout,
-                                  strip_reasoning=args.strip_reasoning, world=args.world))
+            res = drive(spec, key, blob, max_steps=args.max_steps,
+                        max_tokens=args.max_tokens, timeout=args.timeout,
+                        strip_reasoning=args.strip_reasoning, world=args.world)
+            outcomes.append(res)
+            if out_fh:
+                outcome, steps = res.rsplit("@", 1)
+                out_fh.write(json.dumps({
+                    "mode": "drive", "model": spec.name, "provider": spec.provider,
+                    "context": ctx_name, "attempt": run, "outcome": outcome,
+                    "steps": int(steps), "world": args.world}) + "\n")
+                out_fh.flush()
         summary.append((spec.name, outcomes))
 
     print("\n===== SUMMARY (outcome per run) =====")
     for name, outcomes in summary:
         print(f"{name:22s} {' | '.join(outcomes)}")
+    if out_fh:
+        out_fh.close()
 
 
 if __name__ == "__main__":

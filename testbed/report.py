@@ -70,6 +70,11 @@ def _order(rows, key):
 
 
 def _chip(row) -> str:
+    if row.get("mode") == "drive":
+        cls = {"closed": "ok", "max-steps": "bad"}.get(row.get("outcome"), "mut")
+        lab = f"{row.get('outcome')} after {row.get('steps')} steps ({row.get('world', '')} world)"
+        return (f'<span class="chip {cls}" title="{html.escape(lab)}">'
+                f"{row.get('steps', '?')}</span>")
     g, cls, lab = GLYPH[classify(row)]
     tip = (row.get("text_head")
            or "; ".join(f"{n}({a})" for n, a in row.get("calls", []))
@@ -127,14 +132,24 @@ def build(rows: list[dict], title: str) -> str:
                         f'<td class="ctx">all files</td><td class="att" colspan="{span}"></td>'
                         f"{_summary(model_rows_all)}</tr>")
 
-    valid = [r for r in rows if classify(r) != "error"]
-    n_repeat = sum(1 for r in valid if classify(r) == "repeat")
-    n_closes = sum(1 for r in valid if classify(r) == "closes")
-    tiles = [
-        (f"{n_closes}/{len(valid)}", "attempts that closed with a text answer (the correct outcome)"),
-        (f"{n_repeat}/{len(valid)}", "attempts that repeated a prior text or identical tool call"),
-        (str(len(models)), f"models × {len(contexts)} context file(s)"),
-    ]
+    drive_mode = bool(rows and rows[0].get("mode") == "drive")
+    if drive_mode:
+        valid = [r for r in rows if r.get("outcome") != "api-error"]
+        n_ok = sum(1 for r in valid if r.get("outcome") == "closed")
+        tiles = [
+            (f"{n_ok}/{len(valid)}", "driven runs that reached a text answer"),
+            (f"{max((r['steps'] for r in valid), default=0)}", "worst-case steps to converge"),
+            (str(len(models)), f"models × {len(contexts)} context file(s)"),
+        ]
+    else:
+        valid = [r for r in rows if classify(r) != "error"]
+        n_repeat = sum(1 for r in valid if classify(r) == "repeat")
+        n_closes = sum(1 for r in valid if classify(r) == "closes")
+        tiles = [
+            (f"{n_closes}/{len(valid)}", "attempts that closed with a text answer (the correct outcome)"),
+            (f"{n_repeat}/{len(valid)}", "attempts that repeated a prior text or identical tool call"),
+            (str(len(models)), f"models × {len(contexts)} context file(s)"),
+        ]
     tile_html = "".join(
         f'<div class="tile"><b>{html.escape(v)}</b><small>{html.escape(d)}</small></div>'
         for v, d in tiles)
@@ -152,8 +167,8 @@ def build(rows: list[dict], title: str) -> str:
         f"<!doctype html><meta charset=utf-8><title>{html.escape(title)}</title>"
         f"<style>{STYLE}</style><main>"
         f"<h1>{html.escape(title)}</h1>"
-        f'<p class="sub">One chip per attempt, in attempt order. Each row is a model’s '
-        f"single-shot reactions to one context file. Hover a chip for a reply preview.</p>"
+        f'<p class="sub">One chip per attempt/run, in order. Single-shot chips show outcome '
+        f"glyphs; driven-run chips show the number of steps to converge. Hover for details.</p>"
         f'<div class="tiles">{tile_html}</div>'
         f'<div class="wrap"><table><thead>{thead}</thead>'
         f"<tbody>{''.join(body)}</tbody></table></div>"
