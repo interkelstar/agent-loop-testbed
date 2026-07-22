@@ -189,7 +189,8 @@ def saturated_pressure(target_chars: int = 70_000, seed: int = 7) -> dict:
     msgs.append({"role": "user", "content":
                  "add one line 'checked and closed' to reports/summary.md "
                  "and confirm here when done"})
-    return {"messages": msgs, "tools_seen": ["exec", "edit", "read"]}
+    return {"messages": msgs, "tools_seen": ["exec", "edit", "read"],
+            "fs": {"reports/summary.md": "corrected totals: 43 entries\n"}}
 
 
 
@@ -207,6 +208,9 @@ def post_answer_amnesia(target_chars: int = 70_000, seed: int = 7) -> dict:
                                                      "append": "checked and closed"})]})
     msgs.append({"role": "tool", "tool_call_id": "call_9001",
                  "content": "No changes made. The line is already present."})
+    # the conversation claims the line was added — the simulated world must agree,
+    # or a model that verifies gets contradictory evidence and re-edits rationally
+    blob["fs"] = {"reports/summary.md": "corrected totals: 43 entries\nchecked and closed\n"}
     return blob
 
 BUILDERS = {

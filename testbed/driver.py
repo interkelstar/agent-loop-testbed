@@ -111,7 +111,10 @@ def fake_result(name: str, arguments: str, fs: dict) -> str:
 
 def drive(spec, key, blob, *, max_steps, max_tokens, timeout, strip_reasoning,
           world="consistent"):
-    fs = new_fs()
+    # a context may declare its own initial filesystem state (key "fs") so the
+    # simulated world agrees with what the conversation claims has happened;
+    # otherwise fall back to the generic seed
+    fs = dict(blob.get("fs") or new_fs())
     msgs = [dict(m) for m in blob["messages"]]
     if strip_reasoning:
         msgs = [{k: v for k, v in m.items() if k != "reasoning_content"} for m in msgs]

@@ -1320,5 +1320,8 @@
   "exec",
   "edit",
   "read"
- ]
+ ],
+ "fs": {
+  "reports/summary.md": "corrected totals: 43 entries\nchecked and closed\n"
+ }
 }
