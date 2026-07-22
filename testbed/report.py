@@ -84,6 +84,12 @@ def _chip(row) -> str:
 
 
 def _summary(rs) -> str:
+    if rs and rs[0].get("mode") == "drive":
+        valid = [r for r in rs if r.get("outcome") != "api-error"]
+        closed = [r for r in valid if r.get("outcome") == "closed"]
+        med = sorted(r["steps"] for r in closed)[len(closed) // 2] if closed else "–"
+        return (f'<td class="sum">{len(closed)}/{len(valid)}'
+                f'<small>closed, median {med} steps</small></td>')
     valid = [r for r in rs if classify(r) != "error"]
     closed = sum(1 for r in valid if classify(r) == "closes")
     pct = f"{round(100 * closed / len(valid))}%" if valid else "–"
