@@ -41,6 +41,15 @@ def _post(url: str, key: str, body: dict, timeout: int) -> dict:
         return json.load(resp)
 
 
+def _canon_call(name: str, arguments) -> tuple[str, str]:
+    """Canonical (name, args) — models like kimi pad JSON arguments with
+    whitespace, which must not defeat identical-call detection."""
+    try:
+        return (name, json.dumps(json.loads(arguments), sort_keys=True))
+    except (json.JSONDecodeError, TypeError):
+        return (name, str(arguments).strip())
+
+
 def classify(row: dict) -> str:
     if row.get("error"):
         return "error"
@@ -60,9 +69,9 @@ def run_cell(spec: ModelSpec, key: str, ctx_path: str, n: int,
         {k: v for k, v in m.items() if k != "reasoning_content"} for m in base_msgs]
 
     prior_texts = [m.get("content") or "" for m in msgs if m.get("role") == "assistant"]
-    prior_calls = [(c["function"]["name"], c["function"]["arguments"])
+    prior_calls = {_canon_call(c["function"]["name"], c["function"]["arguments"])
                    for m in msgs if m.get("role") == "assistant"
-                   for c in m.get("tool_calls") or []]
+                   for c in m.get("tool_calls") or []}
 
     body: dict = {"model": spec.model_id, "messages": msgs,
                   "max_tokens": max_tokens, "stream": False}
@@ -96,7 +105,7 @@ def run_cell(spec: ModelSpec, key: str, ctx_path: str, n: int,
             "finish": choice.get("finish_reason"),
             "closed": not calls,
             "repeat_text": any(content and p and content[:80] == p[:80] for p in prior_texts),
-            "repeat_call": any(c in prior_calls for c in calls),
+            "repeat_call": any(_canon_call(n2, a) in prior_calls for n2, a in calls),
             "text_head": content[:160],
             "calls": [(n2, a[:80]) for n2, a in calls],
         })
