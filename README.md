@@ -87,13 +87,21 @@ An `openclaw` adapter is included as an example of parsing a vendor session
 ### The full-loop driver
 
 Single-shot `run` shows the *first* reaction. `drive` plays the whole loop,
-synthesizing tool results (time-like commands return a fresh value each call, so
-the "result changes every call" property that defeats result-hash detectors is
-preserved):
+synthesizing tool results from a small **stateful mini-filesystem** — edits
+persist, reads return real content, and time-like commands return a fresh value
+each call (preserving the "result changes every call" property that defeats
+result-hash detectors). Statefulness matters: an early version returned canned
+stateless results ("edit succeeded" / "file unchanged"), which itself provoked
+verify-paranoia in the model and contaminated the measurement. That
+contradictory world is still available as an explicit experimental condition:
 
 ```bash
-python -m testbed drive --context samples/mono_loop_midstream.json \
-  --config providers.json --model deepseek-v4-flash --max-steps 15
+python -m testbed drive --context samples/saturated_pressure.json \
+  --config providers.json --model deepseek-v4-flash --max-steps 25
+
+# A/B the world-consistency factor:
+python -m testbed drive --context samples/saturated_pressure.json \
+  --config providers.json --model deepseek-v4-flash --world inconsistent
 ```
 
 ## Configuring models & providers
@@ -125,8 +133,20 @@ The bundled samples are **synthetic** — hand-authored to reproduce the failure
 shapes, with no personal data. See `samples/` for each one’s notes.
 
 - `mono_loop_midstream` — 15 identical calls already in context; measures *continuation*.
-- `mono_loop_entry` — an instruction that interleaves fixed text with tool calls; measures *entry*.
+- `mono_loop_entry` — an instruction that interleaves fixed text with tool calls; measures *entry* from a clean start (control: no tested model looped from it in our runs).
 - `benign_close` — a finished task the model only needs to confirm; measures spurious re-looping.
+- `saturated_pressure` — a ~70k-char synthetic history (digest walls, tool cycles, corrections, resolved wobbles) ending in one trivial request; measures entry *pressure* on a saturated context.
+
+### What we found (so you don't over-read your first grid)
+
+Replaying the *real* incident contexts, loop **continuation** reproduced
+reliably across mid-tier models. **Entry** is harder: on the synthetic
+`saturated_pressure` context one mid-tier reasoning model repeated a prior
+identical call in ~10% of single-shot reactions (with visible
+distrust-of-tools reasoning — context contamination at work), but driven
+multi-step runs self-recovered within a few steps in both `--world` conditions
+and at both 70k and 150k chars. Unbounded entry stayed a property of the real,
+live conversations. Treat synthetic entry numbers as precursor rates.
 
 ## How outcomes are classified
 

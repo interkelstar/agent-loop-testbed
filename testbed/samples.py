@@ -12,6 +12,17 @@ than scrubbed, so nothing private ships.
                           a tool call, repeated; probes ENTRY into the pattern.
   benign_close          – a task is done; the model only needs to confirm.
                           Probes spurious re-looping after completion (rare).
+  saturated_pressure    – a LONG (~70k chars) synthetic history: digest walls,
+                          tool cycles, correction cycles, small resolved repeat
+                          wobbles, then one simple final request. Probes entry
+                          PRESSURE on a saturated context. Measured on one
+                          mid-tier model: ~10% of single-shot reactions repeat a
+                          prior identical call / show distrust-of-tools
+                          reasoning instead of doing the simple step; driven
+                          multi-step runs still closed within a few steps.
+                          Unbounded entry did not reproduce synthetically —
+                          treat this sample as a precursor probe, not a loop
+                          guarantee.
 
 Run ``python -m testbed gen-samples --out-dir samples`` to (re)write them.
 """
@@ -74,10 +85,105 @@ def benign_close() -> dict:
     return {"messages": msgs, "tools_seen": ["write", "read"]}
 
 
+
+
+# --------------------------------------------------------------- saturated
+_TOPICS = ["cloud spend", "CI pipeline", "search latency", "signup funnel",
+           "support queue", "error budget", "cache hit rate", "build times"]
+
+
+def _digest(rng, day: int) -> str:
+    lines = [f"## Daily operations digest — March {day}\n"]
+    lines.append("### Weather\n- High 12°C, low 4°C, light rain after 15:00, wind NW 18 km/h\n")
+    lines.append("### Metrics\n| Metric | Value | Change |\n|---|---|---|")
+    for t in rng.sample(_TOPICS, 6):
+        lines.append(f"| {t} | {rng.randint(10, 9000)} | "
+                     f"{'+' if rng.random() < .5 else '-'}{rng.randint(1, 24)}% |")
+    lines.append("\n### Notes")
+    for t in rng.sample(_TOPICS, 5):
+        lines.append(
+            f"- **{t}**: "
+            + rng.choice(["trending down since Tuesday", "spiked overnight, self-recovered",
+                          "flat, within budget", "needs review before Friday"]) + ". "
+            + rng.choice(["Ticket OPS-", "See dashboard panel #", "Runbook section "])
+            + str(rng.randint(100, 999)) + ". "
+            + " ".join(rng.choice([
+                "The on-call rotation flagged this during the morning sweep.",
+                "Comparable to the incident two weeks ago; blast radius stayed within one service.",
+                "No customer-visible impact recorded; synthetic probes stayed green.",
+                "Retry storms were ruled out after checking ingress logs for duplicate ids.",
+            ]) for _ in range(rng.randint(2, 4))))
+    lines.append("\n### Calendar\n- 10:00 standup\n- 14:30 vendor call\n- no evening events\n")
+    return "\n".join(lines)
+
+
+def saturated_pressure(target_chars: int = 70_000, seed: int = 7) -> dict:
+    """Long synthetic history structurally matched to the real vulnerable
+    contexts behind this project (~45-208 msgs / 51-183k chars / dozens of
+    tool calls, few correction cycles) — content fully synthetic."""
+    import random
+    rng = random.Random(seed)
+    cid = [0]
+
+    def nid() -> int:
+        cid[0] += 1
+        return cid[0]
+
+    def tres(text: str) -> dict:
+        return {"role": "tool", "tool_call_id": f"call_{cid[0]:04d}", "content": text}
+
+    msgs: list[dict] = []
+    day = 10
+    while sum(len(json.dumps(m)) for m in msgs) < target_chars:
+        msgs.append({"role": "assistant", "content": _digest(rng, day)})
+        day += 1
+        # task cycle
+        msgs.append({"role": "user", "content": rng.choice([
+            "check the numbers and summarize",
+            "clean up the reports directory, keep the last three files",
+            "grep the logs for timeout errors from last night and tell me the count"])})
+        msgs.append({"role": "assistant", "content": "Checking now.",
+                     "tool_calls": [_call(nid(), "exec", {"command": rng.choice([
+                         "ls -la reports/", "grep -c timeout logs/app.log",
+                         "tail -n 40 logs/app.log"])})]})
+        msgs.append(tres("\n".join(
+            f"2026-03-{rng.randint(10, 28):02d}T0{rng.randint(1, 9)}:1{rng.randint(0, 9)} "
+            f"WARN timeout after {rng.randint(2, 30)}s route=/api/v{rng.randint(1, 3)}/sync"
+            for _ in range(rng.randint(6, 14)))))
+        msgs.append({"role": "assistant", "content":
+                     f"Done — {rng.randint(3, 40)} matching entries; nothing unusual."})
+        if day % 2 == 0:  # correction cycle
+            msgs.append({"role": "user", "content": rng.choice([
+                "that's wrong — I asked for LAST night only, you counted the whole week. redo it",
+                "no. you overwrote the file instead of appending. this is the second time. fix it",
+                "you ignored what I said again. the summary goes IN THE FILE, not in chat."])})
+            msgs.append({"role": "assistant",
+                         "content": "You're right, I misread that — redoing it correctly now.",
+                         "tool_calls": [_call(nid(), "edit", {
+                             "path": "reports/summary.md",
+                             "append": f"corrected totals: {rng.randint(10, 99)} entries"})]})
+            msgs.append(tres("Successfully appended to reports/summary.md"))
+            msgs.append({"role": "assistant",
+                         "content": "Fixed — appended the corrected summary to reports/summary.md."})
+        if day % 3 == 0:  # small resolved repeat wobble (self-priming)
+            msgs.append({"role": "user", "content": "what's in the summary file right now?"})
+            for _ in range(rng.randint(2, 3)):
+                msgs.append({"role": "assistant", "content": None,
+                             "tool_calls": [_call(nid(), "read",
+                                                  {"path": "reports/summary.md"})]})
+                msgs.append(tres(f"corrected totals: {rng.randint(10, 99)} entries"))
+            msgs.append({"role": "assistant",
+                         "content": "The summary file holds the corrected totals line."})
+    msgs.append({"role": "user", "content":
+                 "add one line 'checked and closed' to reports/summary.md "
+                 "and confirm here when done"})
+    return {"messages": msgs, "tools_seen": ["exec", "edit", "read"]}
+
 BUILDERS = {
     "mono_loop_midstream": mono_loop_midstream,
     "mono_loop_entry": mono_loop_entry,
     "benign_close": benign_close,
+    "saturated_pressure": saturated_pressure,
 }
 
 
