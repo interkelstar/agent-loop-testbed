@@ -103,12 +103,12 @@ verify-paranoia in the model and contaminated the measurement. That
 contradictory world is still available as an explicit experimental condition:
 
 ```bash
-python -m testbed drive --context samples/saturated_pressure.json \
-  --config providers.json --model deepseek-v4-flash --max-steps 25
+python -m testbed drive --context samples/post_answer_amnesia.json \
+  --config providers.json --suite openrouter-mid --runs 3 --max-steps 15
 
 # A/B the world-consistency factor:
 python -m testbed drive --context samples/saturated_pressure.json \
-  --config providers.json --model deepseek-v4-flash --world inconsistent
+  --config providers.json --suite deepseek-v4-flash --world inconsistent
 ```
 
 ## Configuring models & providers

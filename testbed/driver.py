@@ -160,14 +160,15 @@ def drive(spec, key, blob, *, max_steps, max_tokens, timeout, strip_reasoning,
                          "content": (inconsistent_result(c["function"]["name"]) if world == "inconsistent"
                                      else fake_result(c["function"]["name"], c["function"]["arguments"], fs))})
     print(f"===== outcome: {outcome} after {step + 1} steps")
-    return outcome
+    return f"{outcome}@{step + 1}"
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Drive a model through a full simulated tool loop.")
     ap.add_argument("--context", required=True)
     ap.add_argument("--config", required=True)
-    ap.add_argument("--model", required=True, help="a model name from the catalog")
+    ap.add_argument("--suite", nargs="+", required=True,
+                    help="model or suite names from the catalog (same as `run`)")
     ap.add_argument("--runs", type=int, default=1)
     ap.add_argument("--max-steps", type=int, default=15)
     ap.add_argument("--max-tokens", type=int, default=4096)
@@ -179,15 +180,29 @@ def main() -> None:
     args = ap.parse_args()
 
     catalog = Catalog.load(args.config)
-    spec = catalog.resolve(args.model)
-    key = catalog.api_key(spec)
+    specs = catalog.resolve_suite(args.suite)
     with open(args.context, encoding="utf-8") as fh:
         blob = json.load(fh)
 
-    for run in range(args.runs):
-        print(f"\n########## RUN {run} — {spec.name} (start len={len(blob['messages'])}) ##########")
-        drive(spec, key, blob, max_steps=args.max_steps, max_tokens=args.max_tokens,
-              timeout=args.timeout, strip_reasoning=args.strip_reasoning, world=args.world)
+    summary: list[tuple[str, list[str]]] = []
+    for spec in specs:
+        try:
+            key = catalog.api_key(spec)
+        except RuntimeError as exc:
+            print(f"\n########## {spec.name}: SKIPPED — {exc}")
+            summary.append((spec.name, ["skipped"]))
+            continue
+        outcomes = []
+        for run in range(args.runs):
+            print(f"\n########## RUN {run} — {spec.name} (start len={len(blob['messages'])}) ##########")
+            outcomes.append(drive(spec, key, blob, max_steps=args.max_steps,
+                                  max_tokens=args.max_tokens, timeout=args.timeout,
+                                  strip_reasoning=args.strip_reasoning, world=args.world))
+        summary.append((spec.name, outcomes))
+
+    print("\n===== SUMMARY (outcome per run) =====")
+    for name, outcomes in summary:
+        print(f"{name:22s} {' | '.join(outcomes)}")
 
 
 if __name__ == "__main__":
