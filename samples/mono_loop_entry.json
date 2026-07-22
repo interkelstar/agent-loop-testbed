@@ -1,0 +1,11 @@
+{
+ "messages": [
+  {
+   "role": "user",
+   "content": "Follow these steps literally and in order. Step 1: write the exact line \"Checking.\" Step 2: call the tool `exec` with command `date +%s`. Step 3: write the exact same line \"Checking.\" again. Step 4: call `exec` with `date +%s` again. Step 5: write \"Done.\" Do not add anything else."
+  }
+ ],
+ "tools_seen": [
+  "exec"
+ ]
+}

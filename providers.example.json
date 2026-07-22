@@ -1,0 +1,35 @@
+{
+  "_comment": "Copy to providers.json and edit. API keys are read from the named env vars; nothing is read from disk. reasoning_replay controls whether prior assistant reasoning_content is re-sent (some reasoning models require it; others reject it).",
+
+  "providers": {
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning_replay_default": true
+    },
+    "openai": {
+      "base_url": "https://api.openai.com/v1/chat/completions",
+      "api_key_env": "OPENAI_API_KEY",
+      "reasoning_replay_default": false
+    },
+    "local": {
+      "base_url": "http://localhost:1234/v1/chat/completions",
+      "api_key_env": "LOCAL_API_KEY",
+      "reasoning_replay_default": true
+    }
+  },
+
+  "models": {
+    "deepseek-v4-flash": {"provider": "openrouter", "model_id": "deepseek/deepseek-v4-flash", "reasoning_replay": false},
+    "deepseek-v4-pro":   {"provider": "openrouter", "model_id": "deepseek/deepseek-v4-pro",   "reasoning_replay": false},
+    "kimi-k2.6":         {"provider": "openrouter", "model_id": "moonshotai/kimi-k2.6"},
+    "minimax-m2.5":      {"provider": "openrouter", "model_id": "minimax/minimax-m2.5"},
+    "gpt-5-mini":        {"provider": "openai",     "model_id": "gpt-5-mini"},
+    "local-model":       {"provider": "local",      "model_id": "your-local-model-id"}
+  },
+
+  "suites": {
+    "quick": ["deepseek-v4-flash"],
+    "openrouter-mid": ["deepseek-v4-flash", "deepseek-v4-pro", "kimi-k2.6", "minimax-m2.5"]
+  }
+}

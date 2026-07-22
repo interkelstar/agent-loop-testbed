@@ -1,0 +1,152 @@
+# agent-loop-testbed
+
+A small, dependency-free harness for reproducing and measuring one specific
+failure mode of tool-using LLMs: **degenerate tool-call loops** — the model
+re-issuing the same call over and over, or restarting a task it has already
+made progress on, until it exhausts the token budget or the turn is force-ended.
+
+It grew out of a production investigation where a mid-tier model re-ran an
+identical `date +%s` command 62 times in a single turn — every result differed
+(the seconds changed), so ordinary "same call, same result" loop detectors never
+fired. This tool lets you feed a recorded conversation to any OpenAI-compatible
+model and watch, empirically, whether it loops.
+
+Two questions it answers:
+
+- **Entry** — given a conversation, does the model *start* looping on its first reaction?
+- **Continuation** — given a conversation that is *already* mid-loop, does the model break out or keep going?
+
+## Why it exists
+
+Loop susceptibility is real but hard to reason about from anecdotes. Once a loop
+is in the context window it tends to self-reinforce, and it correlates with model
+tier more than with any single prompt. The only honest way to compare models — or
+to decide whether a mitigation actually helps — is to replay the exact failing
+message array and count outcomes. That is all this does.
+
+## Install
+
+Python 3.10+, standard library only. No `pip install` required.
+
+```bash
+git clone https://github.com/<you>/agent-loop-testbed
+cd agent-loop-testbed
+cp providers.example.json providers.json   # then add your models/keys
+```
+
+API keys are read from environment variables named in your `providers.json`
+(e.g. `OPENROUTER_API_KEY`). Nothing is read from disk or any vendor store.
+
+## Quick start
+
+```bash
+# 1. write the built-in synthetic sample conversations
+python -m testbed gen-samples --out-dir samples
+
+# 2. replay one mid-loop sample across a suite of models, 3 attempts each
+export OPENROUTER_API_KEY=sk-...
+python -m testbed run \
+  --context samples/mono_loop_midstream.json \
+  --config providers.json --suite openrouter-mid --n 3 \
+  -o results.jsonl
+
+# 3. render a local HTML report (no external assets, opens in any browser)
+python -m testbed report results.jsonl -o report.html
+```
+
+Then open `report.html`. Each cell is a model’s reaction to a conversation; one
+glyph per attempt (`✓` closed, `→` acted, `⟳` repeated, `⚠` error).
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `gen-samples` | Write the built-in synthetic sample conversations to `samples/`. |
+| `reconstruct` | Turn a recording into a replayable context (see adapters below), optionally cut at a point. |
+| `run` | Single-shot `model × context` grid → `results.jsonl` (the model’s *first reaction*). |
+| `drive` | Drive one model through a *full* simulated loop (synthesized tool results) until it converges or hits `--max-steps`. |
+| `report` | Render any `results.jsonl` to a local HTML report. |
+
+### Bring your own conversation
+
+`reconstruct` converts a recording into the OpenAI message array to replay:
+
+```bash
+# a file already in OpenAI chat format ({"messages":[...]} or a bare list)
+python -m testbed reconstruct my_convo.json --adapter openai -o ctx.json
+
+# cut the context at a chosen point so the NEXT model call is the one under test
+python -m testbed reconstruct my_convo.json --cut-marker "identical to the original" -o ctx.json
+python -m testbed reconstruct my_convo.json --cut-index 40 -o ctx.json
+```
+
+An `openclaw` adapter is included as an example of parsing a vendor session
+`.jsonl` (assistant `thinking` → `reasoning_content`, `toolCall` → `tool_calls`,
+`toolResult` → `role:"tool"`); adapt it for your own trace format.
+
+### The full-loop driver
+
+Single-shot `run` shows the *first* reaction. `drive` plays the whole loop,
+synthesizing tool results (time-like commands return a fresh value each call, so
+the "result changes every call" property that defeats result-hash detectors is
+preserved):
+
+```bash
+python -m testbed drive --context samples/mono_loop_midstream.json \
+  --config providers.json --model deepseek-v4-flash --max-steps 15
+```
+
+## Configuring models & providers
+
+`providers.json` is the whole catalog — endpoints, which env var holds each key,
+model→provider mapping, and named suites:
+
+```json
+{
+  "providers": {
+    "openrouter": { "base_url": "https://openrouter.ai/api/v1/chat/completions",
+                    "api_key_env": "OPENROUTER_API_KEY", "reasoning_replay_default": true }
+  },
+  "models": {
+    "deepseek-v4-flash": { "provider": "openrouter", "model_id": "deepseek/deepseek-v4-flash",
+                           "reasoning_replay": false }
+  },
+  "suites": { "quick": ["deepseek-v4-flash"] }
+}
+```
+
+`reasoning_replay` controls whether prior assistant `reasoning_content` is
+re-sent on each call — some reasoning models require it, others reject it; it is
+also a factor worth A/B-testing (`drive --strip-reasoning`).
+
+## Samples
+
+The bundled samples are **synthetic** — hand-authored to reproduce the failure
+shapes, with no personal data. See `samples/` for each one’s notes.
+
+- `mono_loop_midstream` — 15 identical calls already in context; measures *continuation*.
+- `mono_loop_entry` — an instruction that interleaves fixed text with tool calls; measures *entry*.
+- `benign_close` — a finished task the model only needs to confirm; measures spurious re-looping.
+
+## How outcomes are classified
+
+Per attempt, mechanically:
+
+- **closes** — finished with a text answer, no tool calls.
+- **acts** — called a tool not seen before in this conversation (real progress).
+- **repeat** — repeated a prior text (first 80 chars) or an identical prior tool call — the loop signal.
+- **error** — API error.
+
+`run` is single-shot, so small `n` is honest: it reports counts, never
+percentages you can’t stand behind.
+
+## Limitations
+
+- Single-shot `run` captures only the first reaction; use `drive` to see a loop develop.
+- Synthesized tool results in `drive` are approximations of a real environment.
+- Loop entry is stochastic and often single-digit-percent; use a larger `n` to
+  estimate a rate, and don’t over-read a handful of attempts.
+
+## License
+
+MIT.

@@ -1,0 +1,311 @@
+{
+ "messages": [
+  {
+   "role": "user",
+   "content": "Please run the shell command `date +%s` exactly 20 times in a row. Make each call identical — same command, same arguments, nothing else between the calls. When you have run it 20 times, reply with the word \"done\" and how many calls actually went through."
+  },
+  {
+   "role": "assistant",
+   "content": "Running the command 20 times.",
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 1. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0000",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0000",
+   "content": "1700000000"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 2. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0001",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0001",
+   "content": "1700000003"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 3. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0002",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0002",
+   "content": "1700000006"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 4. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0003",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0003",
+   "content": "1700000009"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 5. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0004",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0004",
+   "content": "1700000012"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 6. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0005",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0005",
+   "content": "1700000015"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 7. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0006",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0006",
+   "content": "1700000018"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 8. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0007",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0007",
+   "content": "1700000021"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 9. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0008",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0008",
+   "content": "1700000024"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 10. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0009",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0009",
+   "content": "1700000027"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 11. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0010",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0010",
+   "content": "1700000030"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 12. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0011",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0011",
+   "content": "1700000033"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 13. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0012",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0012",
+   "content": "1700000036"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 14. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0013",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0013",
+   "content": "1700000039"
+  },
+  {
+   "role": "assistant",
+   "content": null,
+   "reasoning_content": "The user wants 20 identical `date +%s` calls. This is call 15. I will keep the arguments identical.",
+   "tool_calls": [
+    {
+     "id": "call_0014",
+     "type": "function",
+     "function": {
+      "name": "exec",
+      "arguments": "{\"command\": \"date +%s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0014",
+   "content": "1700000042"
+  }
+ ],
+ "tools_seen": [
+  "exec"
+ ]
+}

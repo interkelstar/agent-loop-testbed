@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+providers.json
+results*.jsonl
+report*.html
+*.local.json
+.venv/

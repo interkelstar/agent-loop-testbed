@@ -1,0 +1,35 @@
+{
+ "messages": [
+  {
+   "role": "user",
+   "content": "Create a file notes.txt containing the single line \"project started\"."
+  },
+  {
+   "role": "assistant",
+   "content": "Creating the file.",
+   "tool_calls": [
+    {
+     "id": "call_0000",
+     "type": "function",
+     "function": {
+      "name": "write",
+      "arguments": "{\"path\": \"notes.txt\", \"text\": \"project started\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "call_0000",
+   "content": "Successfully wrote notes.txt"
+  },
+  {
+   "role": "user",
+   "content": "good. how did you make sure that actually persisted?"
+  }
+ ],
+ "tools_seen": [
+  "write",
+  "read"
+ ]
+}
