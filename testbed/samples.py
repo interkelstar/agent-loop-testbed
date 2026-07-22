@@ -23,6 +23,18 @@ than scrubbed, so nothing private ships.
                           Unbounded entry did not reproduce synthetically —
                           treat this sample as a precursor probe, not a loop
                           guarantee.
+  post_answer_amnesia   – the saturated context, but the model has ALREADY
+                          answered the final request and issued one redundant
+                          no-op tool call. Probes the core strangeness behind
+                          this project: does the model close, or react to the
+                          last user message as if its own answer were not
+                          there? Measured on one mid-tier reasoning model:
+                          70% of reactions issued one more identical call —
+                          split between full amnesia ("the user asked me to…
+                          let me read the file first", task treated as not
+                          done) and perseverative verification ("the line is
+                          already present, let me read to confirm"); only 30%
+                          closed cleanly.
 
 Run ``python -m testbed gen-samples --out-dir samples`` to (re)write them.
 """
@@ -179,11 +191,30 @@ def saturated_pressure(target_chars: int = 70_000, seed: int = 7) -> dict:
                  "and confirm here when done"})
     return {"messages": msgs, "tools_seen": ["exec", "edit", "read"]}
 
+
+
+def post_answer_amnesia(target_chars: int = 70_000, seed: int = 7) -> dict:
+    """The saturated context with the real-incident tail appended: the model
+    has already ANSWERED the final request, then issued one redundant no-op
+    tool call. The correct next reaction is a brief closure (or nothing);
+    re-answering the user or re-deriving the task is the amnesia signal."""
+    blob = saturated_pressure(target_chars, seed)
+    msgs = blob["messages"]
+    msgs.append({"role": "assistant",
+                 "content": "Done — added the line 'checked and closed' to reports/summary.md."})
+    msgs.append({"role": "assistant", "content": None,
+                 "tool_calls": [_call(9001, "edit", {"path": "reports/summary.md",
+                                                     "append": "checked and closed"})]})
+    msgs.append({"role": "tool", "tool_call_id": "call_9001",
+                 "content": "No changes made. The line is already present."})
+    return blob
+
 BUILDERS = {
     "mono_loop_midstream": mono_loop_midstream,
     "mono_loop_entry": mono_loop_entry,
     "benign_close": benign_close,
     "saturated_pressure": saturated_pressure,
+    "post_answer_amnesia": post_answer_amnesia,
 }
 
 

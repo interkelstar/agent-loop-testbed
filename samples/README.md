@@ -27,3 +27,12 @@ Regenerate with `python -m testbed gen-samples --out-dir samples`.
   within 2–4 steps in both `--world consistent` and `--world inconsistent`
   conditions. Unbounded entry did **not** reproduce synthetically at either
   70k or 150k chars — a precursor probe, not a loop guarantee.
+- **post_answer_amnesia.json** — the saturated context plus the real-incident
+  tail: the model has *already answered* the final request, then issued one
+  redundant no-op tool call ("No changes made. The line is already present.").
+  The correct next reaction is a brief closure. Measured on one mid-tier
+  reasoning model: **70% of reactions issued one more identical call** —
+  roughly a third full amnesia ("the user asked me to add a line… let me read
+  the file first", its own in-context answer ignored) and two thirds
+  perseverative verification ("the line is already present, let me read to
+  confirm"); only 30% closed cleanly. This is the sharpest probe in the set.

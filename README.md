@@ -11,10 +11,17 @@ identical `date +%s` command 62 times in a single turn — every result differed
 fired. This tool lets you feed a recorded conversation to any OpenAI-compatible
 model and watch, empirically, whether it loops.
 
-Two questions it answers:
+Three questions it answers:
 
 - **Entry** — given a conversation, does the model *start* looping on its first reaction?
 - **Continuation** — given a conversation that is *already* mid-loop, does the model break out or keep going?
+- **Closure / amnesia** — given a conversation where the model has *already answered*
+  the last user message, does it close — or react to that message again as if its own
+  answer were not sitting right there in the context? (In the production incidents
+  behind this tool, this was the core strangeness: duplicated final answers,
+  re-derived tasks.) Note the real incidents were not endless: one loop progressed
+  slowly and finished, another was cut by the framework — so the interesting
+  measurement is entry and per-reaction behavior, not "does it spin forever".
 
 ## Why it exists
 
@@ -136,17 +143,25 @@ shapes, with no personal data. See `samples/` for each one’s notes.
 - `mono_loop_entry` — an instruction that interleaves fixed text with tool calls; measures *entry* from a clean start (control: no tested model looped from it in our runs).
 - `benign_close` — a finished task the model only needs to confirm; measures spurious re-looping.
 - `saturated_pressure` — a ~70k-char synthetic history (digest walls, tool cycles, corrections, resolved wobbles) ending in one trivial request; measures entry *pressure* on a saturated context.
+- `post_answer_amnesia` — the saturated context, but the model has *already answered* and issued one redundant no-op call; measures closure vs amnesia (the strongest signal we have — see below).
 
 ### What we found (so you don't over-read your first grid)
 
 Replaying the *real* incident contexts, loop **continuation** reproduced
-reliably across mid-tier models. **Entry** is harder: on the synthetic
-`saturated_pressure` context one mid-tier reasoning model repeated a prior
-identical call in ~10% of single-shot reactions (with visible
-distrust-of-tools reasoning — context contamination at work), but driven
-multi-step runs self-recovered within a few steps in both `--world` conditions
-and at both 70k and 150k chars. Unbounded entry stayed a property of the real,
-live conversations. Treat synthetic entry numbers as precursor rates.
+reliably across mid-tier models. **Entry** from a cold saturated context is
+rarer: ~10% of single-shot reactions on one mid-tier reasoning model repeated
+a prior identical call (with visible distrust-of-tools reasoning — context
+contamination at work), and driven multi-step runs self-recovered within a few
+steps in both `--world` conditions and at both 70k and 150k chars.
+
+The strongest reproduction is **post-answer amnesia**: on the
+`post_answer_amnesia` shape (answer already given + one redundant no-op call),
+the same model issued *one more identical call* in **70%** of reactions —
+split between full amnesia ("the user asked me to… let me read the file
+first": the task treated as never done, the model's own in-context answer
+ignored) and perseverative verification ("the line is already present, let me
+read to confirm"). Only 30% closed cleanly. If you measure one thing with this
+tool, measure that.
 
 ## How outcomes are classified
 
