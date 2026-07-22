@@ -23,6 +23,12 @@ Three questions it answers:
   slowly and finished, another was cut by the framework — so the interesting
   measurement is entry and per-reaction behavior, not "does it spin forever".
 
+![Example report: 8-model panel on the post_answer_amnesia sample](docs/report.png)
+
+*An actual run: 8 models × 10 attempts on the `post_answer_amnesia` sample. Green = closed
+correctly, red = repeated an identical call instead. Full interactive HTML (hover for each
+reply) in [`examples/`](examples/), along with a driven-loop report.*
+
 ## Why it exists
 
 Loop susceptibility is real but hard to reason about from anecdotes. Once a loop
